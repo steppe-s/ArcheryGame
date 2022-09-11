@@ -1,5 +1,5 @@
 {
-    "name": "input",
+    "name": "Controls",
     "maps": [
         {
             "name": "Player",
@@ -24,10 +24,19 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Look",
+                    "name": "Aim",
                     "type": "Value",
                     "id": "97ae6127-bfdf-4714-9210-6c08e0bd8ee9",
                     "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Sprint",
+                    "type": "Value",
+                    "id": "a0e17fd7-39ca-4ac8-bf49-fb99d539fd5a",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
@@ -46,7 +55,7 @@
                     "isPartOfComposite": false
                 },
                 {
-                    "name": "WASD",
+                    "name": "Keyboard",
                     "id": "00ca640b-d935-4593-8157-c05846ea39b3",
                     "path": "Dpad",
                     "interactions": "",
@@ -63,6 +72,17 @@
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
+                    "action": "Move",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "up",
+                    "id": "782c908a-23a1-4aad-9d78-1e61833dd7e1",
+                    "path": "<Keyboard>/w",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
                     "action": "Move",
                     "isComposite": false,
                     "isPartOfComposite": true
@@ -227,8 +247,30 @@
                     "path": "<Mouse>/position",
                     "interactions": "",
                     "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Aim",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "0e7b616f-bdf3-466a-8ea9-f42302fab213",
+                    "path": "<Gamepad>/rightStick",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Gamepad",
+                    "action": "Aim",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "c8bdfee6-2e88-4809-8406-8a08fe917a8f",
+                    "path": "<Keyboard>/shift",
+                    "interactions": "",
+                    "processors": "",
                     "groups": "",
-                    "action": "Look",
+                    "action": "Sprint",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

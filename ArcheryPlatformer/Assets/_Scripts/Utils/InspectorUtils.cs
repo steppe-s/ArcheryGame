@@ -5,11 +5,12 @@ using UnityEngine;
 
 namespace _Scripts
 {
+
     public class ReadOnlyAttribute : PropertyAttribute
     {
  
     }
-    
+#if UNITY_EDITOR
     [CustomPropertyDrawer(typeof(ReadOnlyAttribute))]
     public class ReadOnlyDrawer : PropertyDrawer
     {
@@ -28,4 +29,5 @@ namespace _Scripts
             GUI.enabled = true;
         }
     }
+#endif
 }

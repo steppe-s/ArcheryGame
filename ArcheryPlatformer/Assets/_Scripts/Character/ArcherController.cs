@@ -9,8 +9,17 @@ namespace _Scripts.Character
     {
         [Header("Movement")] 
         [SerializeField] protected float walkingSpeed;
-        [SerializeField] protected float walkingForce, aerialSpeed, aerialForce, jumpingStrength, jumpingCooldown, horizontalVelocityCutoff = 0.5f, diveStrength, diveSpeed;
-
+        [SerializeField] protected float walkingForce;
+        [SerializeField] protected float aerialSpeed;
+        [SerializeField] protected float aerialForce;
+        [SerializeField] protected float sprintingSpeedMultiplier;
+        [SerializeField] protected float sprintingForceMultiplier;
+        [SerializeField] protected float jumpingStrength;
+        [SerializeField] protected float jumpingCooldown;
+        [SerializeField] protected float horizontalVelocityCutoff;
+        [SerializeField] protected float diveStrength; 
+        [SerializeField] protected float diveSpeed;
+        
         [Header("Aim")] 
         [SerializeField] protected float armRotateSpeed;
         
@@ -21,6 +30,7 @@ namespace _Scripts.Character
         [Header("info")]
         [ReadOnly, SerializeField] protected float lastJump;
         [ReadOnly, SerializeField] protected Vector2 movementVector, lookVector;
+        [ReadOnly, SerializeField] protected bool sprint;
         [ReadOnly, SerializeField] private bool grounded, groundCheckHasBeenDone;
         [ReadOnly, SerializeField] private Bow bow;
         
@@ -54,13 +64,20 @@ namespace _Scripts.Character
         {
             if (movementVector.x != 0)
             {
+                var speedMultiplier = 1f;
+                var forceMultiplier = 1f;
+                if (sprint)
+                {
+                    speedMultiplier *= sprintingSpeedMultiplier;
+                    forceMultiplier *= sprintingForceMultiplier;
+                }
                 if (IsGrounded())
                 {
-                    HorizontalMovement(walkingForce, walkingSpeed, true);
+                    HorizontalMovement(walkingForce * forceMultiplier, walkingSpeed * speedMultiplier, true);
                 }
                 else
                 {
-                    HorizontalMovement(aerialForce, aerialSpeed, false);
+                    HorizontalMovement(aerialForce * forceMultiplier, aerialSpeed * speedMultiplier, false);
                 }
             }
             else
@@ -93,6 +110,10 @@ namespace _Scripts.Character
                 if (doAngleCheck)
                 {
                     vector = GetPlaneAlignedMovementVector2(vector);
+                    if (Mathf.Abs(Vector2.Angle(vector, Vector2.right)) > 45)
+                    {
+                        vector = Vector2.zero;
+                    }
                 }
                 _rb.AddForce(vector.normalized * forceToApply, 0f);
             }

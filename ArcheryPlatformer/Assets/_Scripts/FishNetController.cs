@@ -11,20 +11,18 @@ using UnityEngine.InputSystem;
 
 namespace _Scripts
 {
-    public class FishNetController : NetworkBehaviour
+    public class FishNetController : TimedNetworkBehaviour
     {
         #region Types.
 
         private struct InputData
         {
             public Vector2 MoveVector;
-            public Vector2 AimVector;
             public bool Sprint;
 
-            public InputData(Vector2 moveVector, Vector2 aimVector, bool sprint)
+            public InputData(Vector2 moveVector, bool sprint)
             {
                 MoveVector = moveVector;
-                AimVector = aimVector;
                 Sprint = sprint;
             }
         }
@@ -32,15 +30,17 @@ namespace _Scripts
         private struct ReconcileData
         {
             public Vector3 Position;
-            public Quaternion Rotation;
+            // public Quaternion Rotation;
             public Vector2 Velocity;
             public float AngularVelocity;
             public float LastJump;
             
-            public ReconcileData(Vector3 position, Quaternion rotation, Vector2 velocity, float angularVelocity, float lastJump)
+            public ReconcileData(Vector3 position, 
+                // Quaternion rotation, 
+                Vector2 velocity, float angularVelocity, float lastJump)
             {
                 Position = position;
-                Rotation = rotation;
+                // Rotation = rotation;
                 Velocity = velocity;
                 AngularVelocity = angularVelocity;
                 LastJump = lastJump;
@@ -51,7 +51,6 @@ namespace _Scripts
 
         #region Inspector Fields.
 
-        [SerializeField] protected float aimSpeed;
         [SerializeField] protected float walkingSpeed;
         [SerializeField] protected float walkingForce;
         [SerializeField] protected float aerialSpeed;
@@ -66,7 +65,6 @@ namespace _Scripts
         [SerializeField] protected float maxRampAngle = 60f;
         [SerializeField] protected float rampCheckDistance;
         
-        [SerializeField] private GameObject bow;
         [SerializeField] private Transform rampPointLeft, rampPointRight;
         [SerializeField] private LayerMask groundLayers;
         
@@ -76,21 +74,19 @@ namespace _Scripts
         #endregion
         
         #region ReadOnly Fields.
-
+        
+        [Header("info")]
         [SerializeField, ReadOnly] private Vector2 movementInput;
-        [SerializeField, ReadOnly] private Vector2 aimInput;
         [SerializeField, ReadOnly] private bool sprint;
-        [SerializeField, ReadOnly] private bool subscribed = false;
         [SerializeField, ReadOnly] private float lastJump = 0f;
         [SerializeField, ReadOnly] private bool gripped;
         [SerializeField, ReadOnly] private bool grounded;
-
+        
         #endregion
 
         #region Private Fields.
 
         private Rigidbody2D _rigidbody;
-        private Camera _camera;
 
         private bool _groundCheckDone;
         private bool _gripCheckDone;
@@ -123,16 +119,10 @@ namespace _Scripts
             Controls.Enable();
             _rigidbody.isKinematic = false;
         }
-        
-        private Vector2 CalcAimVector(InputAction.CallbackContext ctx)
-        {
-            // if (_input.currentControlScheme != "Keyboard&Mouse") return ctx.ReadValue<Vector2>();
-            return (_camera.ScreenToWorldPoint(ctx.ReadValue<Vector2>()) - transform.position).normalized;
-        }
-        
+
         private InputData PackageInputData()
         {
-            return new InputData(movementInput, aimInput, sprint);
+            return new InputData(movementInput, sprint);
         }
 
         #endregion
@@ -143,12 +133,10 @@ namespace _Scripts
         {
             base.OnStartClient();
 
-            _camera = Camera.main;
             _rigidbody = GetComponent<Rigidbody2D>();
             
             Controls.Player.Move.performed += ctx => movementInput = ctx.ReadValue<Vector2>();
             Controls.Player.Move.canceled += ctx => movementInput = Vector2.zero;
-            Controls.Player.Aim.performed += ctx => aimInput = CalcAimVector(ctx);
             Controls.Player.Sprint.performed += ctx => sprint = true;
             Controls.Player.Sprint.canceled += ctx => sprint = false;
             if (!IsServer)
@@ -194,28 +182,7 @@ namespace _Scripts
 
         #region Loop.
 
-        private void SubscribeToTimeManager(bool subscribe)
-        {
-            TimeManager timeManager = InstanceFinder.TimeManager;
-            if (timeManager == null)
-                return;
-            if (subscribe == subscribed)
-                return;
-            subscribed = subscribe;
-
-            if (subscribe)
-            {
-                timeManager.OnTick += TimeManager_OnTick;
-                timeManager.OnPostTick += TimeManager_OnPostTick;
-            }
-            else
-            {
-                timeManager.OnTick -= TimeManager_OnTick;
-                timeManager.OnPostTick -= TimeManager_OnPostTick;
-            }
-        }
-        
-        private void TimeManager_OnTick()
+        protected override void TimeManager_OnTick()
         {
             if (IsOwner)
             {
@@ -228,14 +195,13 @@ namespace _Scripts
                 Act(default, true);
             }
         }
-        
-        private void TimeManager_OnPostTick()
+
+        protected override void TimeManager_OnPostTick()
         {
             if (!IsServer) return;
             var t = transform;
             var data = new ReconcileData(
                 t.position, 
-                t.rotation, 
                 _rigidbody.velocity, 
                 _rigidbody.angularVelocity,
                 lastJump);
@@ -249,12 +215,18 @@ namespace _Scripts
         [Replicate]
         private void Act(InputData data, bool asServer, bool replaying = false)
         {
-            _groundCheckDone = false;
-            _gripCheckDone = false;
-            Aim(data.AimVector);
+            ResetChecks();
             HorizontalInput(data);
             if (data.MoveVector.y > 0) Jump();
             else if (data.MoveVector.y < 0) Dive();
+        }
+
+        private void ResetChecks()
+        {
+            grounded = false;
+            gripped = false;
+            _groundCheckDone = false;
+            _gripCheckDone = false;
         }
 
         [Reconcile]
@@ -262,7 +234,6 @@ namespace _Scripts
         {
             var t = transform;
             t.position = data.Position;
-            t.rotation = data.Rotation;
             _rigidbody.velocity = data.Velocity;
             _rigidbody.angularVelocity = data.AngularVelocity;
         }
@@ -270,13 +241,6 @@ namespace _Scripts
         #endregion
 
         #region Controller methods.
-
-        private void Aim(Vector2 aimVector)
-        {
-            float angle = Mathf.Atan2(aimVector.normalized.y, aimVector.normalized.x) * Mathf.Rad2Deg;
-            Quaternion q = Quaternion.AngleAxis(angle, Vector3.forward);
-            bow.transform.rotation = Quaternion.Slerp(bow.transform.rotation, q, Time.deltaTime * aimSpeed);
-        }
 
         private void HorizontalInput(InputData data)
         {
@@ -304,8 +268,7 @@ namespace _Scripts
 
         private void Walk(float input, bool doSprint)
         {
-            var force = doSprint ? walkingForce * sprintingForceMultiplier : walkingForce;
-            var speed = doSprint ? walkingSpeed * sprintingSpeedMultiplier : walkingSpeed;
+            var (force, speed) = doSprint ? (walkingForce * sprintingForceMultiplier, walkingSpeed * sprintingSpeedMultiplier) : (walkingForce, walkingSpeed);
             AddXAxisForce(input, force, speed, true);
         }
 
@@ -324,7 +287,9 @@ namespace _Scripts
 
         private void Dive()
         {
-            
+            var velocity = _rigidbody.velocity;
+            if (!(velocity.y < diveSpeed) && !(velocity.y * diveStrength < 0) && velocity.y != 0) return;
+            _rigidbody.AddForce(Vector2.down * diveStrength);
         }
 
         private void Jump()
@@ -353,7 +318,7 @@ namespace _Scripts
         {
             if (direction == 0f) return Vector2.right;
             var point = direction < 0 ? rampPointLeft : rampPointRight;
-            var hit = Physics2D.Raycast(point.position, Vector2.down, rampCheckDistance, groundLayers);
+            var hit = Physics2D.Raycast(point.position, -point.up, rampCheckDistance, groundLayers);
             return hit.collider ? MathUtilities.RotateVectorByDelta(hit.normal, -90 * Mathf.Deg2Rad) : Vector2.right;
         }
 
@@ -370,5 +335,12 @@ namespace _Scripts
         }
 
         #endregion
+
+        private void OnDrawGizmosSelected()
+        {
+            Gizmos.DrawRay(rampPointLeft.position, -rampPointLeft.up * rampCheckDistance);
+            Gizmos.DrawRay(rampPointRight.position, -rampPointRight.up * rampCheckDistance);
+
+        }
     }
 }

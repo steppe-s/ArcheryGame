@@ -6,7 +6,7 @@
 [Tt]emp/
 [Oo]bj/
 [Bb]uild/
-[Cc]lones/
+*_clone_*/
 [Bb]uilds/
 [Ll]ogs/
 [Mm]emoryCaptures/

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   velocity: 20
   drawTime: 1
-  cooldown: 0.1
+  cooldown: 0.5
   aimSpeed: 40
   drawCurve:
     serializedVersion: 2

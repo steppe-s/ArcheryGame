@@ -204,13 +204,6 @@ namespace _Scripts.CharacterParts
                 {
                     arrow.Release(transform.position,(transform.rotation * Vector2.right * (bowType.DrawCurve.Evaluate(drawProgress) * bowType.Velocity)), ignoredColliders);
                     arrow = null;
-                    
-                    // GameObject newArrow = Instantiate(arrowPrefab);
-                    // newArrow.transform.rotation = transform.rotation;
-                    // newArrow.transform.position = transform.position;
-                    // newArrow.GetComponent<Rigidbody2D>().velocity = transform.rotation * Vector2.right * (drawProgress * 20);
-                    // newArrow.GetComponent<ArrowBehaviour>().ignoredColliders = ignoredColliders;
-                    // Spawn(newArrow);
                 }
                 DrawProgress = 0;
                 lastCancelOrRelease = (float) TimeManager.TicksToTime(TickType.Tick);
@@ -222,14 +215,16 @@ namespace _Scripts.CharacterParts
             float angle = Mathf.Atan2(aimVector.normalized.y, aimVector.normalized.x) * Mathf.Rad2Deg;
             Quaternion q = Quaternion.AngleAxis(angle, Vector3.forward);
             transform.rotation = Quaternion.Slerp(transform.rotation, q, Time.deltaTime * bowType.AimSpeed);
+            if (!arrow) return;
+            arrow.transform.position = stringNockPoint.position;
+            arrow.transform.rotation = stringNockPoint.rotation;
         }
 
         public bool TryAddArrowToInventory(ArrowBehaviour newArrow)
         {
             if (arrow || lastCancelOrRelease + bowType.Cooldown >= (float) TimeManager.TicksToTime(TickType.Tick)) return false;
-            
             arrow = newArrow;
-            return arrow.Nock(this, stringNockPoint);
+            return arrow.Nock(this);
         }
 
         public ArrowBehaviour GetArrowFromInventory(int index)

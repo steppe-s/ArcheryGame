@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using _Scripts.Arrows;
 using _Scripts.Objects;
 using _Scripts.Utils;
-using FishNet;
 using FishNet.Connection;
 using FishNet.Managing.Timing;
-using FishNet.Object;
 using FishNet.Object.Prediction;
 using FishNet.Object.Synchronizing;
-using FishNet.Transporting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -17,10 +15,11 @@ namespace _Scripts.CharacterParts
 {
     public class BowBehaviour : TimedNetworkBehaviour, IArrowInventory
     {
-        
-
         [SerializeField] private BowType bowType;
-        [SerializeField] private Transform stringNockPoint;
+        [SerializeField] private Transform bracePoint;
+        [SerializeField] private Transform topLimb;
+        [SerializeField] private Transform bottomLimb;
+        [SerializeField] private float drawDistance;
         
         [Header("info")]
         [SerializeField, ReadOnly] private bool draw;
@@ -40,8 +39,7 @@ namespace _Scripts.CharacterParts
             get => drawProgress;
             set => drawProgress = Mathf.Clamp01(value);
         }
-
-
+        
         #region Types.
         private struct InputData
         {
@@ -197,12 +195,14 @@ namespace _Scripts.CharacterParts
             else if (data.Draw && lastCancelOrRelease + bowType.Cooldown < (float) TimeManager.TicksToTime(TickType.Tick) && arrow)
             {
                 DrawProgress += ((float) TimeManager.TickDelta) / bowType.DrawTime;
+                arrow.OnDrawProgress(DrawProgress);
+                if (IsServer) arrow.OnDrawProgressServerOnly(DrawProgress);
             }
             else if (DrawProgress > 0 && arrow)
             {
                 if (IsServer)
                 {
-                    arrow.Release(transform.position,(transform.rotation * Vector2.right * (bowType.DrawCurve.Evaluate(drawProgress) * bowType.Velocity)), ignoredColliders);
+                    arrow.Release(bracePoint.position,(transform.rotation * Vector2.right * (bowType.DrawCurve.Evaluate(drawProgress) * bowType.Velocity)), ignoredColliders);
                     arrow = null;
                 }
                 DrawProgress = 0;
@@ -216,8 +216,8 @@ namespace _Scripts.CharacterParts
             Quaternion q = Quaternion.AngleAxis(angle, Vector3.forward);
             transform.rotation = Quaternion.Slerp(transform.rotation, q, Time.deltaTime * bowType.AimSpeed);
             if (!arrow) return;
-            arrow.transform.position = stringNockPoint.position;
-            arrow.transform.rotation = stringNockPoint.rotation;
+            arrow.transform.position = bracePoint.position - bracePoint.right * ((bowType.DrawCurve.Evaluate(drawProgress) * drawDistance) - arrow.NockDistance);
+            arrow.transform.rotation = bracePoint.rotation;
         }
 
         public bool TryAddArrowToInventory(ArrowBehaviour newArrow)
@@ -251,6 +251,16 @@ namespace _Scripts.CharacterParts
         public List<ArrowBehaviour> GetArrowsFromInventory()
         {
             return new List<ArrowBehaviour> {arrow};
+        }
+
+        public Transform GetArrowTransform(int index)
+        {
+            return transform;
+        }
+
+        public Transform GetNextArrowTransform()
+        {
+            return transform;
         }
     }
 }

@@ -1,31 +1,42 @@
 using System;
 using System.Collections.Generic;
+using _Scripts.Arrows;
+using _Scripts.Character;
+using _Scripts.Level;
 using FishNet;
+using FishNet.Component.Prediction;
 using FishNet.Component.Transforming;
 using FishNet.Managing.Timing;
 using FishNet.Object;
 using FishNet.Object.Prediction;
+using FishNet.Object.Synchronizing;
+using FishNet.Observing;
 using Unity.VisualScripting;
 using UnityEngine;
 
 namespace _Scripts.CharacterParts
 {
-    [RequireComponent(typeof(Rigidbody2D))]
+    [RequireComponent(typeof(Rigidbody2D), typeof(NetworkObserver), typeof(PredictedObject))]
     public abstract class ArrowBehaviour : NetworkBehaviour
     {
         private static List<ArrowBehaviour> _all;
         public static List<ArrowBehaviour> All => _all;
         
-        [SerializeField] protected Transform nockPosition;
-        [SerializeField] protected Transform pointPosition;
-        
+        [SerializeField] protected float nockDistance;
+        [SerializeField] protected float pointDistance;
+        public float NockDistance => nockDistance;
+        public float PointDistance => pointDistance;
+
         [Header("info")]
         [SerializeField, ReadOnly] protected Rigidbody2D rb;
         [SerializeField, ReadOnly] protected Collider2D col;
         [SerializeField, ReadOnly] public List<Collider2D> ignoredColliders;
         [SerializeField, ReadOnly] protected ArrowState state;
-        
+        [SerializeField, ReadOnly, SyncVar] protected bool canBePickedUp;
         protected IArrowInventory OwnerInventory;
+
+        
+        public bool CanBePickedUp => canBePickedUp;
         public ArrowState State => state;
 
         #region Network events.
@@ -80,6 +91,8 @@ namespace _Scripts.CharacterParts
                         break;
                     case ArrowState.Nock: 
                         OnNockUpdateServerOnly(); break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
             }
             switch (state)
@@ -92,6 +105,8 @@ namespace _Scripts.CharacterParts
                     break;
                 case ArrowState.Nock: 
                     OnNockUpdate(); break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
         
@@ -99,12 +114,22 @@ namespace _Scripts.CharacterParts
         {
             if (!IsServer) return;
             if (ignoredColliders.Contains(other)) return;
-
             if (state == ArrowState.Flight)
             {
                 PossibleHit(other);
             }
-            
+        }
+
+        private void OnTriggerExit2D(Collider2D other)
+        {
+            if (!IsServer) return;
+            if (ignoredColliders.Contains(other)) return;
+            if (state == ArrowState.Stuck && 
+                other.GetComponent<SurfaceBehaviour>() && 
+                other.transform == transform.parent)
+            {
+                SwitchStates(ArrowState.Flight);
+            }
         }
 
         private void OnDestroy()
@@ -168,6 +193,9 @@ namespace _Scripts.CharacterParts
 
         protected virtual void OnNockEnter()
         {
+            var g = OwnerInventory.GetNextArrowTransform().gameObject;
+            OnPickupServerOnly(g);
+            OnPickup(g);
         }
         protected virtual void OnNockEnterServerOnly()
         {
@@ -246,44 +274,60 @@ namespace _Scripts.CharacterParts
         {
         }
 
-        protected virtual void OnDrawProgress(float progress)
+        public virtual void OnDrawProgress(float progress)
         {
+            
         }
 
-        protected virtual void OnDrawProgressServerOnly(float progress)
+        public virtual void OnDrawProgressServerOnly(float progress)
         {
+            
+        }
+        
+        [ObserversRpc(RunLocally = true)]
+        protected virtual void OnHitSurface(GameObject surface)
+        {
+            transform.parent = surface.transform;
+            Debug.Log(surface);
         }
 
-        protected virtual void OnHitSurface(SurfaceBehaviour surface)
+        protected virtual void OnHitSurfaceServerOnly(GameObject surface)
         {
+            Debug.Log(surface);
+        }
+        
+        [ObserversRpc(RunLocally = true)]
+        protected virtual void OnHitDamageableObject(GameObject damageable)
+        {
+            Debug.Log(damageable);
+            transform.parent = damageable.GetComponent<DamageableObjectBehaviour>().GraphicalTransform;
         }
 
-        protected virtual void OnHitSurfaceServerOnly(SurfaceBehaviour surface)
+        protected virtual void OnHitDamageableObjectServerOnly(GameObject damageable)
         {
+            canBePickedUp = false;
         }
 
-        protected virtual void OnHitDamageableObject(DamageableObjectBehaviour damageable)
-        {
-        }
-
-        protected virtual void OnHitDamageableObjectServerOnly(DamageableObjectBehaviour damageable)
-        {
-        }
-
+        [ObserversRpc(RunLocally = true)]
         protected virtual void OnRelease()
         {
+            
         }
 
         protected virtual void OnReleaseServerOnly()
         {
+            
+        }
+        
+        [ObserversRpc(RunLocally = true)]
+        protected void OnPickup(GameObject inventory)
+        {
+            transform.parent = inventory.transform;
         }
 
-        protected void OnPickup()
+        protected void OnPickupServerOnly(GameObject inventory)
         {
-        }
-
-        protected void OnPickupServerOnly()
-        {
+            
         }
 
         #endregion
@@ -296,12 +340,13 @@ namespace _Scripts.CharacterParts
             transform.position = position;
             rb.velocity = velocity;
             ignoredColliders = ignoreColliders;
+            OnReleaseServerOnly();
+            OnRelease();
             SwitchStates(ArrowState.Flight);
         }
 
         public void PossibleHit(Collider2D other)
         {
-            
             var surface = other.GetComponent<SurfaceBehaviour>();
             var damageable = other.GetComponent<DamageableObjectBehaviour>();
             if (damageable || surface)
@@ -310,13 +355,14 @@ namespace _Scripts.CharacterParts
             }
             if (surface)
             {
-                if (IsServer) OnHitSurfaceServerOnly(surface);
-                OnHitSurface(surface);
+                Debug.Log(other);
+                if (IsServer) OnHitSurfaceServerOnly(other.gameObject);
+                OnHitSurface(other.gameObject);
             }
             if (damageable)
             {
-                if (IsServer) OnHitDamageableObjectServerOnly(damageable);
-                OnHitDamageableObject(damageable);
+                if (IsServer) OnHitDamageableObjectServerOnly(other.gameObject);
+                OnHitDamageableObject(other.gameObject);
             }
             
         }
@@ -333,6 +379,7 @@ namespace _Scripts.CharacterParts
         {
             if (state is not (ArrowState.Stuck or ArrowState.Nock or ArrowState.Quiver)) return false;
             OwnerInventory = inventory;
+            
             SwitchStates(ArrowState.Quiver);
             return true;
         }
@@ -342,6 +389,13 @@ namespace _Scripts.CharacterParts
             if (inventory != OwnerInventory) return false;
             OwnerInventory = null;
             return true;
+        }
+
+        [ObserversRpc(RunLocally = true)]
+        protected void ChangeParent(Transform newParent)
+        {
+            Debug.Log("change parent");
+            transform.parent = newParent;
         }
     }
 }

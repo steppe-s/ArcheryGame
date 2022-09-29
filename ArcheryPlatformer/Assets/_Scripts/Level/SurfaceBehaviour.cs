@@ -1,17 +1,10 @@
-using System.Collections;
-using System.Collections.Generic;
+using FishNet.Object;
 using UnityEngine;
 
-public class SurfaceBehaviour : MonoBehaviour
+namespace _Scripts.Level
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
+    [RequireComponent(typeof(NetworkObject))]
+    public class SurfaceBehaviour : MonoBehaviour
     {
         
     }

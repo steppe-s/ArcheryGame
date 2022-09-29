@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 5896251325615383541}
   - component: {fileID: 8673089493738331441}
   - component: {fileID: 7646099661206291849}
+  - component: {fileID: 11107517369778096}
   m_Layer: 0
   m_Name: Player 1
   m_TagString: Untagged
@@ -60,6 +61,7 @@ MonoBehaviour:
   _networkBehaviours:
   - {fileID: 2626860228788436896}
   - {fileID: 5896251325615383541}
+  - {fileID: 8673089493738331441}
   - {fileID: 7646099661206291849}
   <ParentNetworkObject>k__BackingField: {fileID: 0}
   <ChildNetworkObjects>k__BackingField:
@@ -159,7 +161,7 @@ MonoBehaviour:
   aerialForce: 10
   sprintingSpeedMultiplier: 2
   sprintingForceMultiplier: 2
-  jumpingStrength: 400
+  jumpingStrength: 500
   jumpingCooldown: 0.5
   horizontalVelocityCutoff: 2
   diveStrength: 40
@@ -193,23 +195,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: daa809a08ecaa8c47a78325f5564c21d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _componentIndexCache: 2
+  _addedNetworkObject: {fileID: 742462718728817861}
+  _networkObjectCache: {fileID: 742462718728817861}
   health: 0
+  graphicalTransform: {fileID: 282269002225199346}
   maxHealth: 10
   onDeath:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 742462718728817859}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
+  onDamage:
+    m_PersistentCalls:
+      m_Calls: []
+  onHeal:
+    m_PersistentCalls:
+      m_Calls: []
+  onHealthChange:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &7646099661206291849
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -222,10 +225,41 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6857b5a83361a044281e6e5fee16152b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 2
+  _componentIndexCache: 3
   _addedNetworkObject: {fileID: 742462718728817861}
   _networkObjectCache: {fileID: 742462718728817861}
   range: 1
+--- !u!114 &11107517369778096
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 742462718728817859}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7db70e0ea77f5ac47a8f4565a9406397, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_ShadowGroup: 0
+  m_ComponentVersion: 1
+  m_HasRenderer: 0
+  m_UseRendererSilhouette: 1
+  m_CastsShadows: 1
+  m_SelfShadows: 0
+  m_ApplyToSortingLayers: 00000000
+  m_ShapePath:
+  - {x: -0.13902763, y: -0.27248868, z: 0}
+  - {x: -0.21094587, y: -0.13005939, z: 0}
+  - {x: -0.21094587, y: 0.08396608, z: 0}
+  - {x: -0.1303173, y: 0.27248874, z: 0}
+  - {x: 0.13280596, y: 0.26626703, z: 0}
+  - {x: 0.21119902, y: 0.08339089, z: 0}
+  - {x: 0.20963906, y: -0.13254806, z: 0}
+  - {x: 0.13000168, y: -0.2731578, z: 0}
+  m_ShapePathHash: -1697325468
+  m_Mesh: {fileID: 0}
+  m_InstanceId: 62248
 --- !u!1 &792943037115495402
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,11 +1,10 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using _Scripts.CharacterParts;
 using FishNet.Object;
 using UnityEngine;
 
-namespace _Scripts
+namespace _Scripts.Arrows
 {
     public class ArrowCollectorBehaviour : NetworkBehaviour
     {
@@ -25,7 +24,8 @@ namespace _Scripts
             if (!IsServer) return;
             ArrowBehaviour.All.FindAll(
                 arrow => 
-                    arrow.State == ArrowBehaviour.ArrowState.Stuck && 
+                    arrow.CanBePickedUp &&
+                    arrow.State == ArrowBehaviour.ArrowState.Stuck &&
                     Vector2.Distance(arrow.transform.position, transform.position) <= range &&
                     transform.parent != transform
                     ).ForEach(arrow =>
@@ -42,5 +42,7 @@ namespace _Scripts
         public ArrowBehaviour RemoveArrowFromInventory(int index);
         public ArrowBehaviour SwapArrow(ArrowBehaviour newArrow, int index);
         public List<ArrowBehaviour> GetArrowsFromInventory();
+        public Transform GetArrowTransform(int index);
+        public Transform GetNextArrowTransform();
     }
 }

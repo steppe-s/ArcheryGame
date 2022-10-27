@@ -220,6 +220,11 @@ namespace _Scripts.CharacterParts
             arrow.transform.rotation = bracePoint.rotation;
         }
 
+        public void Limp()
+        {
+            Controls.Disable();
+        }
+        
         public bool TryAddArrowToInventory(ArrowBehaviour newArrow)
         {
             if (arrow || lastCancelOrRelease + bowType.Cooldown >= (float) TimeManager.TicksToTime(TickType.Tick)) return false;

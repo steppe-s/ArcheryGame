@@ -295,23 +295,29 @@ namespace _Scripts.CharacterParts
         {
             Debug.Log(surface);
         }
-        
+
         [ObserversRpc(RunLocally = true)]
-        protected virtual void OnHitDamageableObject(GameObject damageable)
+        protected void OnHitDamageableObjectRPC(GameObject damageable, Vector2 relativeVelocity)
         {
-            Debug.Log(damageable);
             transform.parent = damageable.GetComponent<DamageableObjectBehaviour>().GraphicalTransform;
+            OnHitDamageableObject(damageable, relativeVelocity);
+        }
+        
+        protected virtual void OnHitDamageableObject(GameObject damageable, Vector2 relativeVelocity)
+        {
+            
         }
 
-        protected virtual void OnHitDamageableObjectServerOnly(GameObject damageable)
+        protected virtual void OnHitDamageableObjectServerOnly(GameObject damageable, Vector2 relativeVelocity)
         {
+            
             canBePickedUp = false;
         }
 
         [ObserversRpc(RunLocally = true)]
         protected virtual void OnRelease()
         {
-            
+            transform.parent = null;
         }
 
         protected virtual void OnReleaseServerOnly()
@@ -349,6 +355,13 @@ namespace _Scripts.CharacterParts
         {
             var surface = other.GetComponent<SurfaceBehaviour>();
             var damageable = other.GetComponent<DamageableObjectBehaviour>();
+            var relativeVelocity = other.attachedRigidbody ? rb.velocity - other.attachedRigidbody.velocity : rb.velocity;
+            
+            
+            Debug.Log(relativeVelocity);
+            
+            
+            
             if (damageable || surface)
             {
                 SwitchStates(ArrowState.Stuck);
@@ -361,8 +374,8 @@ namespace _Scripts.CharacterParts
             }
             if (damageable)
             {
-                if (IsServer) OnHitDamageableObjectServerOnly(other.gameObject);
-                OnHitDamageableObject(other.gameObject);
+                if (IsServer) OnHitDamageableObjectServerOnly(other.gameObject, relativeVelocity);
+                OnHitDamageableObjectRPC(other.gameObject, relativeVelocity);
             }
             
         }
@@ -394,7 +407,6 @@ namespace _Scripts.CharacterParts
         [ObserversRpc(RunLocally = true)]
         protected void ChangeParent(Transform newParent)
         {
-            Debug.Log("change parent");
             transform.parent = newParent;
         }
     }

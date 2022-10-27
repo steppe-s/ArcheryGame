@@ -1,15 +1,11 @@
-using System;
 using System.Collections.Generic;
 using _Scripts.Utils;
-using FishNet;
 using FishNet.Connection;
-using FishNet.Managing.Timing;
 using FishNet.Object;
 using FishNet.Object.Prediction;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
-namespace _Scripts
+namespace _Scripts.Character
 {
     public class FishNetController : TimedNetworkBehaviour
     {
@@ -30,17 +26,13 @@ namespace _Scripts
         private struct ReconcileData
         {
             public Vector3 Position;
-            // public Quaternion Rotation;
             public Vector2 Velocity;
             public float AngularVelocity;
             public float LastJump;
             
-            public ReconcileData(Vector3 position, 
-                // Quaternion rotation, 
-                Vector2 velocity, float angularVelocity, float lastJump)
+            public ReconcileData(Vector3 position, Vector2 velocity, float angularVelocity, float lastJump)
             {
                 Position = position;
-                // Rotation = rotation;
                 Velocity = velocity;
                 AngularVelocity = angularVelocity;
                 LastJump = lastJump;
@@ -81,7 +73,8 @@ namespace _Scripts
         [SerializeField, ReadOnly] private float lastJump = 0f;
         [SerializeField, ReadOnly] private bool gripped;
         [SerializeField, ReadOnly] private bool grounded;
-        
+        [SerializeField, ReadOnly] private bool limp = false;
+
         #endregion
 
         #region Private Fields.
@@ -215,6 +208,7 @@ namespace _Scripts
         [Replicate]
         private void Act(InputData data, bool asServer, bool replaying = false)
         {
+            if (limp) return;
             ResetChecks();
             HorizontalInput(data);
             if (data.MoveVector.y > 0) Jump();
@@ -232,8 +226,7 @@ namespace _Scripts
         [Reconcile]
         private void Reconcile(ReconcileData data, bool asServer)
         {
-            var t = transform;
-            t.position = data.Position;
+            transform.position = data.Position;
             _rigidbody.velocity = data.Velocity;
             _rigidbody.angularVelocity = data.AngularVelocity;
         }
@@ -292,6 +285,11 @@ namespace _Scripts
             _rigidbody.AddForce(Vector2.down * diveStrength);
         }
 
+        public void Push(Vector2 force)
+        {
+            
+        }
+
         private void Jump()
         {
             if (!(Time.time - lastJump >= jumpingCooldown)) return;
@@ -332,6 +330,14 @@ namespace _Scripts
         {
             if (_gripCheckDone) return gripped;
             return gripped = grippers.Find(t => t.IsTouchingLayers(groundLayers));
+        }
+
+        [ObserversRpc(RunLocally = true)]
+        public void Limp()
+        {
+            _rigidbody.constraints = RigidbodyConstraints2D.None;
+            Controls.Disable();
+            limp = true;
         }
 
         #endregion

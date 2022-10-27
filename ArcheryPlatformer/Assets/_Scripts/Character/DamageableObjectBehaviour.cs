@@ -1,3 +1,4 @@
+using FishNet.Component.Prediction;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using UnityEngine;
@@ -8,6 +9,11 @@ namespace _Scripts.Character
     public class DamageableObjectBehaviour : NetworkBehaviour
     {
         [SerializeField, ReadOnly, SyncVar] private float health;
+
+        private Rigidbody2D _rigidbody2D;
+        public Rigidbody2D Rigidbody2D => _rigidbody2D;
+
+
         public float Health
         {
             get => health;
@@ -22,6 +28,12 @@ namespace _Scripts.Character
         [SerializeField] private UnityEvent onDamage;
         [SerializeField] private UnityEvent onHeal;
         [SerializeField] private UnityEvent onHealthChange;
+
+        public override void OnStartClient()
+        {
+            base.OnStartClient();
+            _rigidbody2D = GetComponent<Rigidbody2D>();
+        }
 
         public override void OnStartServer()
         {

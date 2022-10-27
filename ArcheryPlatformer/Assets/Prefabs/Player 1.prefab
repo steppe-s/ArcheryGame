@@ -200,10 +200,22 @@ MonoBehaviour:
   _networkObjectCache: {fileID: 742462718728817861}
   health: 0
   graphicalTransform: {fileID: 282269002225199346}
-  maxHealth: 10
+  maxHealth: 2
   onDeath:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 5896251325615383541}
+        m_TargetAssemblyTypeName: _Scripts.FishNetController, Assembly-CSharp
+        m_MethodName: Limp
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   onDamage:
     m_PersistentCalls:
       m_Calls: []
